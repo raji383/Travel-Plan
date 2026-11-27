@@ -1,4 +1,21 @@
 services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        ["CMD-SHELL", 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   frontend:
     image: node:24-alpine
     working_dir: /app
@@ -35,8 +52,14 @@ services:
     image: maven:3.9-eclipse-temurin-17
     working_dir: /app
     command: mvn spring-boot:run
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
       SERVER_PORT: 8081
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/travel_plan
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - ./backend/users:/app
       - maven_repository:/root/.m2
@@ -45,8 +68,14 @@ services:
     image: maven:3.9-eclipse-temurin-17
     working_dir: /app
     command: mvn spring-boot:run
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
       SERVER_PORT: 8082
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/travel_plan
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - ./backend/Travel:/app
       - maven_repository:/root/.m2
@@ -55,8 +84,14 @@ services:
     image: maven:3.9-eclipse-temurin-17
     working_dir: /app
     command: mvn spring-boot:run
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
       SERVER_PORT: 8083
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/travel_plan
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - ./backend/Payment:/app
       - maven_repository:/root/.m2
@@ -64,3 +99,4 @@ services:
 volumes:
   frontend_node_modules:
   maven_repository:
+  postgres_data:
